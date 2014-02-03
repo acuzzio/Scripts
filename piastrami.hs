@@ -1,9 +1,20 @@
 import Text.Printf
+import System.Environment
 
 x  = (-7.0)
 x2 =   8.0
 dimension = 12
 charge = 1.0
+
+main = do
+  args@[x',x2',dim',totCharge'] <- getArgs
+  let x         = read2 x'
+      x2        = read2 x2'
+      dim       = read3 dim'
+      totCharge = read2 totCharge'
+  case length args of
+       4 -> piastrami x x2 dim totCharge
+       otherwise -> putStrLn "come back when you know how to use this"
 
 piastrami :: Double -> Double -> Integer -> Double -> IO()
 piastrami x x2 dim totalCharge = do
@@ -50,12 +61,14 @@ campoElettrico x dimension = do
       charge       = elecCharge * x
       field        = (charge / surfaceM2)/epsilZero
       r            = sqrt $ 1 / (4 * pi * (x/surface))
-  putStrLn $ (show field) ++ " Newton/Coulomb or volt/Meter"
-  putStrLn $ "Electric field equivalent to a charge of an Ion/Electron at " ++ (show r) ++ " Angstrom" 
+  putStrLn $ "\n" ++ (show field) ++ " Newton/Coulomb or volt/Meteri\n"
+  putStrLn $ "Electric field equivalent to a charge of an Ion/Electron at " ++ (show r) ++ " Angstrom\n" 
 
 momentoDipolo :: Double -> Double -> Double -> IO()
 momentoDipolo charge x x2 = do
   let distance = abs ( x - x2 )
       mom      = distance * charge
-  putStrLn $ (show mom) ++ " Debye (electron charge * Angstrom)"
+  putStrLn $ "\n" ++ (show mom) ++ " Debye (electron charge * Angstrom)\n"
 
+read2 x = read x :: Double
+read3 x = read x :: Integer
