@@ -1,6 +1,4 @@
 -- This is to extract geometries and other stuffs from gaussian conical optimization
---
---
 
 import Data.List.Split
 import Data.List
@@ -8,20 +6,58 @@ import Text.Printf
 import System.ShQQ
 
 file="65/mPsb3Chained.log"
-fileZZ=["66/mPsb3Chained.log","69/mPsb3Chained.log","70/mPsb3Chained.log"]
 atomN=23 :: Int
+rightList = [
+             ("050","107")
+            ,("055","last") 
+            ,("060","last")
+            ,("065","last")
+            ,("066","70")
+            ,("067","last")
+            ,("068","last")
+            ,("069","26")
+            ,("070","12")
+            ,("071","last")
+            ,("072","last")
+            ,("073","last")
+            ,("074","last")
+            ,("075","last")
+            ,("076","last")
+            ,("077","last")
+            ,("078","last")
+            ,("079","last")
+            ,("080","last")
+            ,("081","last")
+            ,("082","last")
+            ,("083","last")
+            ,("084","last")
+            ,("085","last")
+            ,("086","last")
+            ,("087","last")
+            ,("090","last")
+            ,("095","40")
+            ,("100","76")
+            ,("opt","26")
+            ]
 
-numToElem = [("1","H"), ("6","C"), ("7","N")]
-read2 x       = read x :: Double
-mosaic x      = map words $ lines x
-unmosaic x    = unlines $ map unwords x
-pr x          = map (\x -> printf "%.3f" x :: String) x
+rightFiles = map (\x -> (fst x ++ "/mPsb3Chained.log" , snd x)) rightList
 
-main3 file = do
+numToElem  = [("1","H"), ("6","C"), ("7","N")]
+read2 x    = read x :: Double
+mosaic x   = map words $ lines x
+unmosaic x = unlines $ map unwords x
+pr x       = map (\x -> printf "%.3f" x :: String) x
+
+main = do
+  a <- mapM main3 rightFiles
+  putStrLn $ unmosaic a
+
+main3 (file,label) = do
   f <- forces file
   [root1,root2] <- energies file
-  let force = map forceAtAtom1 f
-  return $ last $ transpose $ [force,root1,root2]
+  let force  = map forceAtAtom1 f 
+      transp = transpose $ [force,root1,root2]
+  return $ if label == "last" then last transp else transp !! (pred (read label :: Int))
 
 forces :: FilePath -> IO [String]
 forces fileN = do
