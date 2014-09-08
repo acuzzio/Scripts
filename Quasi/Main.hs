@@ -2,7 +2,9 @@
 
 module Main where
 
-
+import Data.Generics
+import Language.Haskell.TH as TH
+import Language.Haskell.TH.Quote
 import Verbatim 
 import VerbatimParser
 
@@ -10,12 +12,15 @@ main = do
       print newOne
       putStrLn newOne
 
-
+-- quiero transformar esto:
 newOne = [verbatim|
 LOOOL
 %%lal
 %lel
 |]
+
+--en esto
+newOne = "LOOOL\n" ++ (show lal) ++ "\n" ++ lel ++ "\n"
 
 --script1 m n = [verbatim|
 -- #! /usr/bin/bash
