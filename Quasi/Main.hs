@@ -19,9 +19,6 @@ LOOOL
 %lel
 |]
 
---en esto
-newOne = "LOOOL\n" ++ (show lal) ++ "\n" ++ lel ++ "\n"
-
 --script1 m n = [verbatim|
 -- #! /usr/bin/bash
 --Hi there Alessio I'm a funny bash script
