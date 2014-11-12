@@ -32,6 +32,5 @@ convert ${ii}.tga ${ii}.png
 done
 rm *.tga
 montage -label '%f' *.png -tile 3x4 -geometry 800x400 allOrbitals.png
-mv allOrbitals.png /home/alessio/Desktop/Dropbox/photos/cancellami2/ORCA
 rm *.png
 
