@@ -28,9 +28,8 @@ exit
 MORO
 vmd -size 800 400 -dispdev text -eofexit -e ScriptVmd$ii
 rm ScriptVmd$ii
-convert ${ii}.tga ${ii}.png
+convert ${ii}.tga TEMPIMAGE${ii}.png
 done
 rm *.tga
 montage -label '%f' *.png -tile 3x4 -geometry 800x400 allOrbitals.png
-rm *.png
-
+rm TEMPIMAGE*.png
