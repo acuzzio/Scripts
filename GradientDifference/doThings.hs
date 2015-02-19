@@ -20,6 +20,7 @@ type Geom     = [Atom]
 type Work     = Double
 type Match    = [(Int,Int)]
 type Input    = (String, Int)
+type Vect     = [[Double]]
 
 coorName x = x ++ "Coor"
 
@@ -29,7 +30,7 @@ workName x = x ++ "Work"
 
 main = do
   difference total without
-----  difference total skel
+  difference total skel
 
 difference a b = do
   ((g1,g2),(c1,c2)) <- readFour a b
@@ -43,32 +44,57 @@ difference a b = do
       geomString list = map (\x -> list !! x) bMatchIndexes
       geomMatchString = map (unlines . geomString) c2S 
       matchLen        = length match
-      atomNadded      = map (\x -> (show matchLen) ++ "\n\n" ++ x) geomMatchString
+      geomMatchFinal  = map (\x -> (show matchLen) ++ "\n\n" ++ x) geomMatchString
+      geomMatchFinalA = map fromBohrToAngstromStringVector geomMatchFinal
       -- I also need some calculus from matched geometry, so I pass to float
       matchGeomF  = fromStringstoGeom geomMatchString 
       [outName,outNameP] = getNames a b
-  return matchGeomF
---      displacementsV  = zipWith displacementVersor (map fst $ doRight filteredGeomsF) (map snd $ doRight filteredGeomsF)
---      scalProduct = scalProdMulti differenceG displacementsV 
---      projection  = zipWith (multiplyVec) displacementsV scalProduct
---  writeMoldenForceFile atomNadded differenceG matchLen outputName
---  writeMoldenForceFile atomNadded projection matchLen outputNameP
---
---multiplyVecScal :: [[Double]] -> Double -> [[Double]]
---multiplyVecScal xs a = chunksOf 3 $ fmap (a*) (concat b)
---
---scalProdMulti :: [[[Double]]] -> [[[Double]]] -> [Double]
---scalProdMulti a b  = zipWith scalProd a b
---
---scalProd :: [[Double]] -> [[Double]] -> Double
---scalProd a b = sum $ zipWith (*) (concat a) (concat b)
+      -- Displacement versors
+      displacementsV  = zipWith displacementVersor (map fst $ doRight matchGeomF) (map snd $ doRight matchGeomF)
+--  writeMoldenForceFile geomMatchFinalA displacementsV matchLen outName
+      scalProduct = scalProdMulti differenceG displacementsV 
+      projection  = zipWith (multiplyVecScal) displacementsV scalProduct
+  writeMoldenForceFile geomMatchFinalA differenceG matchLen outName
+  writeMoldenForceFile geomMatchFinalA projection matchLen outNameP
 
-getNames :: Input -> Input -> [String]
-getNames a b = let
-   [aa,bb] = map fst [a,b]
-   name1   = "ForceDifference" ++ aa ++ "Minus" ++ bb ++ ".molden"
-   name2   = "ForceDifference" ++ aa ++ "Minus" ++ bb ++ "Projection.molden"
-   in [name1,name2]
+-------------
+-- Vectors --
+-------------
+
+multiplyVecScal :: Vect -> Double -> Vect
+multiplyVecScal xs a = chunksOf 3 $ fmap (a*) (concat xs)
+
+scalProdMulti :: [Grad] -> [Geom] -> [Double]
+scalProdMulti a b  = zipWith scalProd a b
+
+scalProd :: Grad -> Geom -> Double
+scalProd a b = sum $ zipWith (*) (concat a) (concat b)
+
+modulVec :: Vect -> Double
+modulVec xss = sqrt $ sum $ map (\x -> x ** 2) $ concat xss
+
+displacementVersor :: Geom -> Geom -> Vect
+displacementVersor a b = let
+  displVector  = zipWithOverVec (-) b a
+  modTot       = modulVec displVector
+  in chunksOf 3 $ map (\x -> x / modTot) (concat displVector)
+
+fromBohrToAngstromStringVector :: String -> String
+fromBohrToAngstromStringVector st = let
+  string = mosaic st
+  transformed = bToAHelper string
+  in unlines $ map unwords transformed
+
+bToAHelper :: [[String]] -> [[String]] 
+bToAHelper []     = []
+bToAHelper (x:xs) = case length x of
+  0 -> [] : bToAHelper xs 
+  1 -> x : bToAHelper xs
+  4 -> transform x : bToAHelper xs
+
+transform [atomT,x,y,z] = [atomT, boh2angString x, boh2angString y, boh2angString z] 
+  
+boh2angString x = p $ boh2ang * (read2 x) 
 
 ----------------
 -- Match part --
@@ -88,15 +114,14 @@ calcMatchAtom geom tr = let
        then -1
        else snd head
 
-atomEqual :: [Double] -> [Double] -> Bool
+atomEqual :: Atom -> Atom -> Bool
 atomEqual a b = atomDistance a b < 0.2
 
-atomDistance :: [Double] -> [Double] -> Double
+atomDistance :: Atom -> Atom -> Double
 atomDistance a b = sum $ map (\x -> x ** 2) $ zipWith (-) b a
 
 safeHead [] = (False,0)
 safeHead x  = head x
-
 
 vecMatchDiff :: Grad -> Grad -> Match -> Grad
 vecMatchDiff xs ys matches = map (tripletMatchDiff xs ys) matches 
@@ -139,7 +164,7 @@ calculateWorkAtOneStep (grad1,grad2) (geom1,geom2) = let
 avgForce :: Double -> Double -> Double
 avgForce x y = (x + y) * 0.5
 
-zipWithOverVec f a b = chunksOf 3 $ zipWith (f) (concat b) (concat a)
+zipWithOverVec f a b = chunksOf 3 $ zipWith (f) (concat a) (concat b)
 
 ----------------------------
 -- Readers and formatters --
@@ -218,9 +243,10 @@ doRight (x:y:xs) = (x,y): doRight (y:xs)
 
 p x = printf "%.6f" x :: String
 
---displacementVersor :: Geom -> Geom -> Geom
---displacementVersor a b = let
---  displVector  = displacement a b
---  modTot       = sqrt $ sum $ map (\x -> x ** 2) $ concat displVector
---  in chunksOf 3 $ map (\x -> x / modTot) (concat displVector)
---
+getNames :: Input -> Input -> [String]
+getNames a b = let
+   [aa,bb] = map fst [a,b]
+   name1   = "ForceDifference" ++ aa ++ "Minus" ++ bb ++ ".molden"
+   name2   = "ForceDifference" ++ aa ++ "Minus" ++ bb ++ "Projection.molden"
+   in [name1,name2]
+
