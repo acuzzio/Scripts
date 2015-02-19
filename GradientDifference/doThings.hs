@@ -2,6 +2,9 @@
 import Data.List.Split
 import Text.Printf
 
+a = [[1.0,1.0,1.0],[1.0,2.0,1.0],[1.0,3.0,1.0]]
+b = [[1.0,1.0,1.0],[1.0,1.0,0.0],[1.0,2.0,1.0],[1.0,3.0,1.0]]
+
 skelN = 23 :: Int
 withoutN = 37 :: Int
 totalN = 39 :: Int
@@ -30,7 +33,7 @@ workName x = x ++ "Work"
 
 main = do
   difference total without
-  difference total skel
+  -- difference total skel
 
 difference a b = do
   ((g1,g2),(c1,c2)) <- readFour a b
@@ -54,10 +57,29 @@ difference a b = do
 --  writeMoldenForceFile geomMatchFinalA displacementsV matchLen outName
       scalProduct = scalProdMulti differenceG displacementsV 
       projection  = zipWith (multiplyVecScal) displacementsV scalProduct
-  writeMoldenForceFile geomMatchFinalA differenceG matchLen outName
-  writeMoldenForceFile geomMatchFinalA projection matchLen outNameP
+  return $ (map (map (boh2ang*)) (c2 !! 1), (fromStringstoGeom2 geomMatchFinalA) !! 1)
+--  return $ geomMatchFinalA !! 1
+--  writeMoldenForceFile geomMatchFinalA differenceG matchLen outName
+--  writeMoldenForceFile geomMatchFinalA projection matchLen outNameP
 
--------------
+------------------------
+-- insert dummy atoms --
+------------------------
+
+-- insertDummyAtoms :: Grad -> Geom -> Geom -> (Grad,Geom)
+insertDummyAtoms coor template = let
+  booleans = map (\x -> any (atomEqual x) coor) template
+  indexes  = map snd $ filter (\x -> fst x == False) $ zip booleans [0..]
+  in indexes
+
+insertDummies :: Grad -> [Int] -> Grad
+insertDummies [] _ = []
+insertDummies (xs:xss) is = 
+
+insertOne :: Grad -> [Double] -> Int -> Grad
+insertOne xs x i = (take i xs) ++ [x] ++ (drop i xs)
+
+------------
 -- Vectors --
 -------------
 
@@ -181,6 +203,7 @@ readFour (prefixA,atomNA) (prefixB,atomNB) = do
   return ((g1,g2),(c1,c2))
 
 fromStringstoGeom st = map (map (map read2) . map tail . map words . lines) st
+fromStringstoGeom2 st = map (map (map read2) . map tail . map words . tail . tail . lines) st
 
 readGrad :: String -> Int -> IO ([Grad])
 readGrad fn atomN = do
