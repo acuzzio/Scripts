@@ -33,51 +33,55 @@ workName x = x ++ "Work"
 
 main = do
   difference total without
-  -- difference total skel
+  difference total skel
 
 difference a b = do
   ((g1,g2),(c1,c2)) <- readFour a b
   c2S <- readGeomStr b
   let match           = calculateMatch (c1!!0) (c2!!0)
+      matchLen        = length match
       aMatchIndexes   = map fst match
       bMatchIndexes   = map snd match
+      geomString list = map (\x -> list !! x) bMatchIndexes
       -- This takes care of gradient difference vector 
       differenceG     = zipWith (\x y -> vecMatchDiff x y match) g1 g2
       -- To make a molcas file I need a matched STRING geometry (with atomtypes)
-      geomString list = map (\x -> list !! x) bMatchIndexes
-      geomMatchString = map (unlines . geomString) c2S 
-      matchLen        = length match
-      geomMatchFinal  = map (\x -> (show matchLen) ++ "\n\n" ++ x) geomMatchString
+      geomMatchString = map unlines c2S 
+      atomN           = head $ map length c2S
+      geomMatchFinal  = map (\x -> (show atomN) ++ "\n\n" ++ x) geomMatchString
       geomMatchFinalA = map fromBohrToAngstromStringVector geomMatchFinal
       -- I also need some calculus from matched geometry, so I pass to float
-      matchGeomF  = fromStringstoGeom geomMatchString 
+      matchGeomF      = fromStringstoGeom geomMatchString 
       [outName,outNameP] = getNames a b
       -- Displacement versors
       displacementsV  = zipWith displacementVersor (map fst $ doRight matchGeomF) (map snd $ doRight matchGeomF)
---  writeMoldenForceFile geomMatchFinalA displacementsV matchLen outName
-      scalProduct = scalProdMulti differenceG displacementsV 
-      projection  = zipWith (multiplyVecScal) displacementsV scalProduct
-  return $ (map (map (boh2ang*)) (c2 !! 1), (fromStringstoGeom2 geomMatchFinalA) !! 1)
---  return $ geomMatchFinalA !! 1
---  writeMoldenForceFile geomMatchFinalA differenceG matchLen outName
---  writeMoldenForceFile geomMatchFinalA projection matchLen outNameP
+      scalProduct     = scalProdMulti differenceG displacementsV 
+      projection      = zipWith (multiplyVecScal) displacementsV scalProduct
+      -- I need to represent atoms with no force to make a chemical consistent stuff.
+      indexes         = whereAreDummyAtoms (geomString (c2!!0)) (c2!!0)
+      diffGWithDum = map (\x -> insertDummies x indexes 0) differenceG
+      projGWithDum = map (\x -> insertDummies x indexes 0) projection
+  writeMoldenForceFile geomMatchFinalA diffGWithDum atomN outName
+  writeMoldenForceFile geomMatchFinalA projGWithDum atomN outNameP
 
 ------------------------
 -- insert dummy atoms --
 ------------------------
 
--- insertDummyAtoms :: Grad -> Geom -> Geom -> (Grad,Geom)
-insertDummyAtoms coor template = let
+whereAreDummyAtoms :: Geom -> Geom -> [Int]
+whereAreDummyAtoms coor template = let
   booleans = map (\x -> any (atomEqual x) coor) template
   indexes  = map snd $ filter (\x -> fst x == False) $ zip booleans [0..]
   in indexes
 
-insertDummies :: Grad -> [Int] -> Grad
-insertDummies [] _ = []
-insertDummies (xs:xss) is = 
+insertDummies :: Grad -> [Int] -> Int -> Grad
+insertDummies [] is n = if elem n is 
+   then [0.0,0.0,0.0] : insertDummies [] is (n+1) 
+   else []
+insertDummies (xs:xss) is n = if elem n is 
+   then [0.0,0.0,0.0] : insertDummies (xs:xss) is (n+1)
+   else xs : insertDummies xss is (n+1)
 
-insertOne :: Grad -> [Double] -> Int -> Grad
-insertOne xs x i = (take i xs) ++ [x] ++ (drop i xs)
 
 ------------
 -- Vectors --
@@ -222,8 +226,16 @@ readGeom fn atomN = do
       split  = chunksOf atomN geomsN
   return split
 
-printTraj :: [Geom] -> IO()
-printTraj xss = do
+readGeomStr :: Input -> IO [[String]]
+readGeomStr  (prefix,atomN) = do
+  geoms <- readFile (coorName prefix)
+  let geomsM            = mosaic geoms
+      atomTypeCorrected = map (\x -> [head (x!!0)] : tail x) geomsM
+      string            = chunksOf atomN $ map unwords atomTypeCorrected
+  return string
+
+printTrajs :: [Geom] -> IO()
+printTrajs xss = do
    let unmosaic = map (map (map show)) xss
        unlineZ  = map unlines $ map (map unwords) unmosaic
        addNumb  = zipWith (\x y -> "\nNumber: " ++ y ++ "\n" ++ x) unlineZ $ map show [0..]
@@ -233,14 +245,6 @@ formatGrad :: Grad -> Int -> Int -> String
 formatGrad grad atomN label = let 
   stringZ = ("point    " ++ (show label)) : (show atomN) : map (unwords . map p) grad
   in unlines stringZ
-
-readGeomStr :: Input -> IO [[String]]
-readGeomStr  (prefix,atomN) = do
-  geoms <- readFile (coorName prefix)
-  let geomsM            = mosaic geoms
-      atomTypeCorrected = map (\x -> [head (x!!0)] : tail x) geomsM
-      string            = chunksOf atomN $ map unwords atomTypeCorrected
-  return string
 
 writeMoldenForceFile :: [String] -> [Grad] -> Int -> String -> IO()
 writeMoldenForceFile geom grad atomN label = do 
