@@ -330,7 +330,7 @@ for j in $(ls *.grid)
 do
 name=${j%.*}
 #gridN=$(grep -a GridName $j | wc -l)
-gridN=$(grep -o GridName $j | wc -l)
+gridN=$(grep -ao GridName $j | wc -l)
 for i in $(seq 1 $gridN);
 do 
 ./grid2cube.py $j ${name}_${i}.cube << MOROKUMA
@@ -348,30 +348,49 @@ mol new $i
 mol new $i
 mol delete 1
 display projection Orthographic
+axes location Off
 menu graphics on
-color Display Background white
-mol modstyle 0 0 CPK 1.000000 0.300000 10.000000 10.000000
+mol modstyle 0 0 CPK 0.600000 0.100000 10.000000 10.000000
 mol color Name
 mol addrep 0
 mol modmaterial 1 0 Transparent
 material change opacity Transparent 0.800000
-mol modstyle 1 0 Isosurface 0.018000 0 0 0 1 1 
+mol modstyle 1 0 Isosurface 0.080000 0 0 0 1 1
 mol modcolor 1 0 ColorID 15
 mol addrep 0
-mol modstyle 2 0 Isosurface -0.018000 0 0 0 1 1
+mol modstyle 2 0 Isosurface -0.080000 0 0 0 1 1
 mol modmaterial 2 0 Transparent
 mol modcolor 2 0 ColorID 1
-axes location Off
-scale by 1.700000
-scale by 1.700000
+rotate x by -90.0000
+rotate y by 90.0000
+rotate x by 45.0000
+scale by 1.600000
 render TachyonInternal ${ii}.tga display %s
 exit
 MORO
-vmd -size 800 400 -dispdev text -eofexit -e ScriptVmd$ii
+
+vmd -size 400 400 -dispdev text -eofexit -e ScriptVmd$ii
 rm ScriptVmd$ii
 convert ${ii}.tga ${ii}.png
-
 done
 rm *.tga grid2cube.py *.cube
-montage -label '%f' *.png -tile 3x4 -geometry 800x400 allOrbitals.png
+
+temp=allImages${name}
+
+mkdir $temp
+for i in $(ls $name*.png | sort -k2 -t_ -n)
+do 
+   a=${i%.*}
+   b=${a#*_}
+#echo $b
+   mv $i $temp/$b
+done
+cd $temp
+montage -label '%f' -pointsize 35 $(ls * | sort -n) -tile 4x4 -geometry 400x400 allOrbitals${name}.png
+cp allOrbitals${name}*.png ../
+cd ..
+
+# sort -k2 -t_ -n is a shit that sorts out the second field of those names separated by '_'
+#montage -label '%f' $(ls *.png | sort -k2 -t_ -n) -tile 3x4 -geometry 800x400 allOrbitals.png
+#montage -label '%f' -pointsize 35 $(ls $name*.png | sort -k2 -t_ -n) -tile 8x9 -geometry 800x400 ${name}allOrbitals.png
 

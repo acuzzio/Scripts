@@ -61,6 +61,7 @@ difference a b = do
       indexes         = whereAreDummyAtoms (geomString (c2!!0)) (c2!!0)
       diffGWithDum = map (\x -> insertDummies x indexes 0) differenceG
       projGWithDum = map (\x -> insertDummies x indexes 0) projection
+  return scalProduct
   writeMoldenForceFile geomMatchFinalA diffGWithDum atomN outName
   writeMoldenForceFile geomMatchFinalA projGWithDum atomN outNameP
 
@@ -87,14 +88,17 @@ insertDummies (xs:xss) is n = if elem n is
 -- Vectors --
 -------------
 
-multiplyVecScal :: Vect -> Double -> Vect
-multiplyVecScal xs a = chunksOf 3 $ fmap (a*) (concat xs)
+multiplyVecScal :: Vect -> [Double] -> Vect
+multiplyVecScal xs as = zipWith (\x y -> map (y*) x) xs as 
 
-scalProdMulti :: [Grad] -> [Geom] -> [Double]
-scalProdMulti a b  = zipWith scalProd a b
+scalProdMulti :: [Grad] -> [Geom] -> [[Double]]
+scalProdMulti xss yss  = zipWith scalProdTripl xss yss
 
-scalProd :: Grad -> Geom -> Double
-scalProd a b = sum $ zipWith (*) (concat a) (concat b)
+scalProdTripl :: Grad -> Geom -> [Double]
+scalProdTripl xs ys = zipWith scalProd xs ys 
+
+scalProd :: Comp -> Comp -> Double
+scalProd a b = sum $ zipWith (*) a b
 
 modulVec :: Vect -> Double
 modulVec xss = sqrt $ sum $ map (\x -> x ** 2) $ concat xss
