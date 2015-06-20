@@ -149,6 +149,7 @@ grep -A\$atomsnum "Symbolic Z-Matrix:" \$Project  | awk '{print \$1}' | tail -\$
    for i in \$(ls -d geom*.1) ; do sed -i 's/C/12/g' \$i ; done
    for i in \$(ls -d geom*.1) ; do sed -i 's/N/14/g' \$i ; done
    for i in \$(ls -d geom*.1) ; do sed -i 's/H/1/g' \$i ; done
+   for i in $(ls -d geom*.1) ; do sed -i 's/O/16/g' $i ; done
    for i in \$(ls -d geom*.1) ; do awk '{printf "%17E %17E %17E \\n " , \$2/sqrt(\$1), \$3/sqrt(\$1), \$4/sqrt(\$1) }' \$i > \$i.2 ; done
    mkdir ../tempfolder3
    mv geom*.2 ../tempfolder3
