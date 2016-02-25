@@ -350,7 +350,7 @@ mol delete 1
 display projection Orthographic
 axes location Off
 menu graphics on
-mol modstyle 0 0 CPK 0.600000 0.100000 10.000000 10.000000
+mol modstyle 0 0 Licorice 0.100000 35.000000 40.000000
 mol color Name
 mol addrep 0
 mol modmaterial 1 0 Transparent
@@ -361,6 +361,7 @@ mol addrep 0
 mol modstyle 2 0 Isosurface -0.080000 0 0 0 1 1
 mol modmaterial 2 0 Transparent
 mol modcolor 2 0 ColorID 1
+color Display Background white
 rotate x by -90.0000
 rotate y by 90.0000
 rotate x by 45.0000
@@ -369,7 +370,7 @@ render TachyonInternal ${ii}.tga display %s
 exit
 MORO
 
-vmd -size 400 400 -dispdev text -eofexit -e ScriptVmd$ii
+vmd -size 800 800 -dispdev text -eofexit -e ScriptVmd$ii
 rm ScriptVmd$ii
 convert ${ii}.tga ${ii}.png
 done
@@ -386,7 +387,7 @@ do
    mv $i $temp/$b
 done
 cd $temp
-montage -label '%f' -pointsize 35 $(ls * | sort -n) -tile 4x4 -geometry 400x400 allOrbitals${name}.png
+montage -label '%f' -pointsize 35 $(ls * | sort -n) -tile 4x4 -geometry 800x800 allOrbitals${name}.png
 cp allOrbitals${name}*.png ../
 cd ..
 
