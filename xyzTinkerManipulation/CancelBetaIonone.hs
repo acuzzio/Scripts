@@ -15,21 +15,31 @@ main = do
   gotArgs <- getArgs
   if gotArgs == []
      then do
-       putStrLn "Hey !!"
+       putStrLn "\nTo be used like this:\n\n./CancelBetaIonone gromacsGeometryfile gromacsVelocityfile\n\n"
      else do
-       putStrLn "Ho !!"
+       let [xyz,velocity] = gotArgs
+       recreate xyz velocity
 
---  a <- readFile fn 
---  let b = mosaic a
---      atomN      = head $ head b
---      noheader   = tail b 
---      --firstPart  = map (\x -> fst $ splitAt 6 x) noheader 
---      secondPart = map (\x -> snd $ splitAt 6 x) noheader 
---      wrongNumer = removeAtoms toBeRemoved noheader
---      replaced   = replacecarbonaddHidro wrongNumer
---      hMoved     = moveatom 3578 3588 replaced
---      renumbered = renumber hMoved
---  putStrLn renumbered
+recreate geom velo = do
+  a <- readFile geom 
+  v <- readFile velo
+  let [b,vel]     = map mosaic [a,v]
+      atomN       = head $ head b
+      noheader    = tail b 
+      --firstPart   = map (\x -> fst $ splitAt 6 x) noheader 
+      secondPart  = map (\x -> snd $ splitAt 6 x) noheader 
+      wrongNumer  = removeAtoms toBeRemoved noheader
+      wrongNumerV = removeAtoms toBeRemoved vel
+      replaced    = replacecarbonaddHidro wrongNumer
+      replacedV   = (take 3576 wrongNumerV) ++ [["3582","0","0","0"],["3583","0","0","0"]] ++ (drop 3576 wrongNumerV)
+      hMoved      = moveatom 3578 3588 replaced
+      hMovedV     = moveatom 3578 3588 replacedV
+      renumbered  = renumber hMoved
+      renumberedV = unmosaic $ renumbervelo hMovedV
+      newName     = (reverse $ tail $ dropWhile (\x -> x /= '.') $ reverse geom) ++ ".new.xyz"
+      newNameV    = (reverse $ tail $ dropWhile (\x -> x /= '.') $ reverse velo) ++ ".new.xyz"
+  writeFile newName  renumbered
+  writeFile newNameV renumberedV
 
 moveatom :: Int -> Int -> [[String]] -> [[String]]
 moveatom from to molecule = let
@@ -64,6 +74,10 @@ printWithourRenumber noheader = let
   lineHead     = len : line
   in unlines lineHead
 
+renumbervelo noheader = let
+  indexes      = map show [1..]
+  in zipWith (:) indexes (map tail noheader)
+
 --renumber :: [[String]] -> [[String]] 
 renumber noheader = let
   firstPart    = map (\x -> fst $ splitAt 6 x) noheader
@@ -71,6 +85,7 @@ renumber noheader = let
   indexes      = map show [1..]
   changesToDo  = zip (map (\x -> x!!0) firstPart) indexes
   noDoubles    = filter (\x -> fst x /= snd x) changesToDo
+  newNumber (newI,oldLine) = newI : tail oldLine  
   changeFirst  = map newNumber $ zip indexes firstPart
   changeSecond = rimpiazzaAll noDoubles secondPart
   attachAgain  = reconstruc changeFirst changeSecond
@@ -81,8 +96,6 @@ renumber noheader = let
 
 rimpiazzaAll :: [(String,String)] -> [[String]] -> [[String]]
 rimpiazzaAll pairs wrongNumer = map (map (rimpiazza pairs)) wrongNumer 
-
-newNumber (newI,oldLine) = newI : tail oldLine  
 
 -- let (a,b) = it
 removeAtoms :: [String] -> [[String]] -> [[String]]
