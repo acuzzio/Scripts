@@ -9,4 +9,4 @@ Quasi is the quasiquoter I will use to put files in files : )
 
 GradientDifference is a tool to work with Molecular Gradients.
 
-ssh://git@
+git clone ssh://git@github.com/acuzzio/Scripts.git
