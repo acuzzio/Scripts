@@ -338,9 +338,8 @@ $i
 MOROKUMA
 
 done
-done
 
-for i in $(ls *.cube)
+for i in $(ls ${name}*.cube)
 do
 ii=${i%.*}
 cat > ScriptVmd$ii << MORO
@@ -362,10 +361,13 @@ mol modstyle 2 0 Isosurface -0.080000 0 0 0 1 1
 mol modmaterial 2 0 Transparent
 mol modcolor 2 0 ColorID 1
 color Display Background white
-rotate x by -90.0000
-rotate y by 90.0000
-rotate x by 45.0000
-scale by 1.600000
+scale by 1.900000
+set viewpoints([molinfo top]) {{{1 0 0 -37.2786} {0 1 0 -25.0266} {0 0 1 -16.3622} {0 0 0 1}} {{0.960089 -0.184426 0.210277 0} {-0.208916 0.027007 0.977561 0} {-0.185966 -0.982475 -0.0126006 0} {0 0 0 1}} {{0.143584 0 0 0} {0 0.143584 0 0} {0 0 0.143584 0} {0 0 0 1}} {{1 0 0 0} {0 1 0 0} {0 0 1 0} {0 0 0 1}}}
+lappend viewplist [molinfo top]
+set topmol [molinfo top]
+foreach v \$viewplist {
+molinfo \$v set {center_matrix rotate_matrix scale_matrix global_matrix} \$viewpoints(\$v)
+}
 render TachyonInternal ${ii}.tga display %s
 exit
 MORO
@@ -374,7 +376,7 @@ vmd -size 800 800 -dispdev text -eofexit -e ScriptVmd$ii
 rm ScriptVmd$ii
 convert ${ii}.tga ${ii}.png
 done
-rm *.tga grid2cube.py *.cube
+rm *.tga *.cube
 
 temp=allImages${name}
 
@@ -391,6 +393,8 @@ montage -label '%f' -pointsize 35 $(ls * | sort -n) -tile 4x4 -geometry 800x800 
 cp allOrbitals${name}*.png ../
 cd ..
 
+done
+rm grid2cube.py
 # sort -k2 -t_ -n is a shit that sorts out the second field of those names separated by '_'
 #montage -label '%f' $(ls *.png | sort -k2 -t_ -n) -tile 3x4 -geometry 800x400 allOrbitals.png
 #montage -label '%f' -pointsize 35 $(ls $name*.png | sort -k2 -t_ -n) -tile 8x9 -geometry 800x400 ${name}allOrbitals.png
