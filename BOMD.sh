@@ -91,7 +91,7 @@ rm $i.xyz $i.com.temp
 #qsub gaus09.submit
 
 ################# GetInitial.sh ##############
-cat > GetInitial.sh <<MORO
+cat > GetInitial.sh << MORO
 #!/bin/bash
 #
 # extract coordinates and velocities from Gaussian BOMD job
@@ -107,66 +107,50 @@ echo ""
 exit 0
 fi
 
-rm lead 2> /dev/null
+rm atomType 2> /dev/null
 
 Project=\$1
 atomsnum=\$(grep "NAtoms=" \$Project | awk '{print \$2}'| head -1)
+splfile=tosplit
+aT=atomType
 
-grep -A\$atomsnum "Symbolic Z-Matrix:" \$Project  | awk '{print \$1}' | tail -\$atomsnum  > lead
+grep -A\$((\$atomsnum+1)) "Symbolic Z-matrix:" \$Project | awk '{print \$1}' | tail -\$atomsnum  > \$aT
 
-    mkdir tempfolder
-    cp lead tempfolder/
-    cp \$1 tempfolder/
-    cd tempfolder
-    grep -A\$((\$atomsnum+9)) "Start point information" \$Project | grep -A\$((\$atomsnum-1)) " I=    1" | sed 's/D/E/g' > all
-    awk '{printf "%10.6f %10.6f %10.6f \\n " , \$4*0.529177249 , \$6*0.529177249 , \$8*0.529177249 }' all >tosplit
-    split -l\$((\$atomsnum+1)) -a3 -d tosplit geom
-    for i in \$(ls -d geom*) ; do paste lead \$i > \$i.temp ; done
-    for i in \$(ls -d geom*.temp) ; do sed '1i\\\\' \$i >\$i.good ; done
-    for i in \$(ls -d geom*.temp.good) ; do sed "1i\\\\\$atomsnum\\\\" \$i >\$i.cool ; done
-   for i in \$(ls -d geom*.temp.good.cool) ; do head -n\$((\$atomsnum+2)) \$i > \$i.great ; done
-    rename temp.good.cool.great xyz geom*.temp.good.cool.great
-    cd ../
-    mkdir geoms
-    cp tempfolder/geom*.xyz geoms/
-    rm -r tempfolder
+grep -A\$((\$atomsnum+9)) "Start point information" \$Project \\
+ | grep -A\$((\$atomsnum-1)) " I=    1"  \\
+ | grep -v '\-\-' \\
+ | sed 's/D/E/g'  \\
+ | awk '{printf "%10.6f %10.6f %10.6f \n" , \$4*0.529177249 , \$6*0.529177249 , \$8*0.529177249 }' > \$splfile
+split -l\$atomsnum -a3 -d \$splfile geom
 
-   mkdir tempfolder2
-   cp lead tempfolder2/
-   cp \$1 tempfolder2/
-   cd tempfolder2
-   grep -A\$((\$atomsnum*2+20)) "Start point information" \$Project | grep -A\$((\$atomsnum)) "MW cartesian velocity" | grep -A\$((\$atomsnum-1)) " I=    1" | sed 's/D/E/g' >all
-   awk '{printf "%17E %17E %17E \\n " , \$4*2.4188843265E-17 , \$6*2.4188843265E-17 , \$8*2.4188843265E-17 }' all >tosplit
-   split -l\$((\$atomsnum+1)) -a3 -d tosplit geom
-   for i in \$(ls -d geom*) ; do head -n\$((\$atomsnum)) \$i > \$i.velocity.xyz ; done
-   cd ../
-   mkdir velos
-   cp tempfolder2/geom*.xyz velos/
-   rm -r tempfolder2
-   cd velos
-   cp ../lead ./
-   for i in \$(ls -d geom*) ; do paste lead \$i > \$i.1 ; done
-   for i in \$(ls -d geom*.1) ; do sed -i 's/C/12/g' \$i ; done
-   for i in \$(ls -d geom*.1) ; do sed -i 's/N/14/g' \$i ; done
-   for i in \$(ls -d geom*.1) ; do sed -i 's/H/1/g' \$i ; done
-   for i in $(ls -d geom*.1) ; do sed -i 's/O/16/g' $i ; done
-   for i in \$(ls -d geom*.1) ; do awk '{printf "%17E %17E %17E \\n " , \$2/sqrt(\$1), \$3/sqrt(\$1), \$4/sqrt(\$1) }' \$i > \$i.2 ; done
-   mkdir ../tempfolder3
-   mv geom*.2 ../tempfolder3
-   cd ../tempfolder3
-   rename .1.2 "" geom*
-   cd ../velos
-   rm ./*
-   mv ../tempfolder3/* .
-   rmdir ../tempfolder3
-   cd ..
-   rm lead
-   mkdir initcond
-   mv geoms initcond/
-   mv velos initcond/
-   tar -zcf initialcondition.tgz initcond/
-   rm -r geoms velos
-   sss initialcondition.tgz
+mkdir geoms
+for i in \$(ls -d geom???)
+do 
+  paste \$aT \$i | sed "1s/^/ \$atomsnum\n\n/" > geoms/\$i.xyz 
+done
+
+rm geom??? \$splfile \$aT
+
+grep -A\$((\$atomsnum*2+20)) "Start point information" \$Project \\
+   | grep -A\$((\$atomsnum)) "MW cartesian velocity" \\
+   | grep "I=" \\
+   | sed 's/D/E/g' \\
+   | awk '{printf "%17E %17E %17E \n" , \$4*2.4188843265E-17 , \$6*2.4188843265E-17 , \$8*2.4188843265E-17 }'  > \$splfile
+split -l\$atomsnum -a3 -d \$splfile geom
+
+mkdir velos
+for i in \$(ls -d geom???)
+do
+   mv \$i velos/\$i.velocity.xyz
+done
+
+rm \$splfile 
+
+mkdir initcond
+mv geoms initcond/
+mv velos initcond/
+
+tar -zcf initialcondition.tgz initcond/
 
 MORO
 ##############################################
