@@ -53,7 +53,7 @@ done
 
 rm $splfile 
 
-fol=${prj}_initCond
+fol=initCond_${prj}
 
 mkdir ${fol}
 mv geoms ${fol}
